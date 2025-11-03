@@ -1,0 +1,32 @@
+.dot-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  background-color: #f0f4ff; 
+}
+
+.dot-grid-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.dot-grid-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.software-list-bg {
+  background-color: #332b2b !important; /* ép nền xám đen */
+}
+
+.seminar-list-bg {
+  background-color: #332b2b !important; /* ép nền xám đen */
+}
+

@@ -1,0 +1,24 @@
+// client-user/src/api/axiosInstance.js
+import axios from "axios";
+
+// Tạo một instance mặc định của axios
+const instance = axios.create({
+  baseURL: "http://localhost:5000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Tự động gắn token vào header nếu có
+instance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default instance;

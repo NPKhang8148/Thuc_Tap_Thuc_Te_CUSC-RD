@@ -1,0 +1,24 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+button.custom {
+  @apply rounded-lg border px-4 py-2 text-white bg-black hover:border-indigo-500;
+} */
+
+/* @import './Dashboard.css';
+@import './Sidebar.css';
+@import './Header.css'; */
+
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+@import url('./Dashboard.css');
+@import url('./Sidebar.css');
+@import url('./Header.css');
+@import url("leaflet/dist/leaflet.css");
