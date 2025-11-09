@@ -22,7 +22,7 @@ app.use(
       "http://localhost:5174",
       "http://localhost:3000",
     ], // địa chỉ frontend
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
   })
 );

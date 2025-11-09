@@ -131,7 +131,7 @@ function DashboardHome() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Tổng Quan Dashboard
+        Tiện ích mở rộng
       </Typography>
 
       <Grid container spacing={3}>
@@ -242,7 +242,7 @@ function AdminDashboard() {
 
   const menuItems = [
     {
-      text: "Trang chủ Dashboard",
+      text: "Tiện ích mở rộng",
       path: "/dashboard",
       icon: <DashboardIcon />,
     },

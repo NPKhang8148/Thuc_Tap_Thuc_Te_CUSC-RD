@@ -27,6 +27,7 @@ const seminarSchema = new mongoose.Schema({
   speakers: [speakerSchema], // Danh sách diễn giả (tên, mã, email)
   content: [contentSchema], // Nội dung chuyên đề (text / image / video)
   inviteEmails: [{ type: String }], // Danh sách email được mời
+  hidden: { type: Boolean, default: false }, //Ẩn/Hiện chuyên đề
   createdAt: { type: Date, default: Date.now },
 });
 

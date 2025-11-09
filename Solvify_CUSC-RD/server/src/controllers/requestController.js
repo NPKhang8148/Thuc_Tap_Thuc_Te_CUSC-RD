@@ -126,6 +126,23 @@ const getUrgentRequests = async (req, res) => {
   }
 };
 
+// Toggle hidden (ẩn/hiện)
+const toggleHidden = async (req, res) => {
+  try {
+    const request = await Request.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: "Không tìm thấy yêu cầu" });
+    }
+
+    request.hidden = !request.hidden;
+    await request.save();
+
+    res.json({ message: "Cập nhật trạng thái thành công", hidden: request.hidden });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getRequests,
   getRequestById,
@@ -136,4 +153,5 @@ module.exports = {
   getMyRequests,
   getRequestCount,
   getUrgentRequests,
+  toggleHidden,
 };

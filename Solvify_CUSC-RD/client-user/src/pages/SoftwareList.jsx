@@ -61,7 +61,10 @@ const SoftwareList = () => {
       const res = await axios.get(url);
       let data = res.data;
 
-      // Nếu có từ khóa tìm kiếm -> lọc theo title (không phân biệt hoa thường)
+      // Sắp xếp phần mềm mới thêm lên đầu (newest first)
+      data = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Lọc theo từ khóa tìm kiếm
       if (searchQuery) {
         data = data.filter((item) =>
           item.title?.toLowerCase().includes(searchQuery)

@@ -30,7 +30,7 @@ function AdminLogin() {
       localStorage.setItem("adminToken", token);
       localStorage.setItem("adminInfo", JSON.stringify(admin));
 
-      navigate("/dashboard");
+      navigate("/dashboard/stats");
     } catch (err) {
       console.error("❌ Lỗi đăng nhập:", err.response?.data || err.message);
       alert(err.response?.data?.message || "Lỗi đăng nhập");

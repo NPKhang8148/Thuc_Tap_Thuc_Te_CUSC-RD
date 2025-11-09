@@ -54,6 +54,7 @@ const addSoftware = async (req, res) => {
       category: categoryId,
       url,
       images,
+      hidden: req.body.hidden ?? false,
     });
 
     await software.save();
@@ -108,6 +109,12 @@ const updateSoftware = async (req, res) => {
       updateData.url = String(updateData.url).trim();
     }
 
+    // xử lý hidden
+    if (updateData.hidden !== undefined) {
+      updateData.hidden =
+        updateData.hidden === "true" || updateData.hidden === true;
+    }
+
     const software = await Software.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -124,26 +131,21 @@ const updateSoftware = async (req, res) => {
   }
 };
 
-// Lấy tất cả Software (populate category để hiện tên)
-// const getAllSoftware = async (req, res) => {
-//   try {
-//     const list = await Software.find().populate("category", "name");
-//     res.json(list);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
 // Lấy tất cả Software (có thể lọc theo category)
 const getAllSoftware = async (req, res) => {
   try {
-    const { categoryId } = req.query; // lấy categoryId từ query
+    const { categoryId, includeHidden } = req.query;
 
-    // Nếu có categoryId -> lọc, ngược lại lấy tất cả
-    const filter = categoryId ? { category: categoryId } : {};
+    const filter = {};
+
+    if (categoryId) filter.category = categoryId;
+
+    // Nếu không gửi includeHidden → mặc định không trả software.hidden = true
+    if (!includeHidden || includeHidden === "false") {
+      filter.hidden = false;
+    }
 
     const list = await Software.find(filter).populate("category", "name");
-
     res.json(list);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -163,13 +165,22 @@ const deleteSoftware = async (req, res) => {
 // Lấy chi tiết 1 phần mềm theo id
 const getSoftwareById = async (req, res) => {
   try {
+    const includeHidden = req.query.includeHidden === "true";
+
     const software = await Software.findById(req.params.id).populate(
       "category",
       "name"
     );
+
     if (!software) {
       return res.status(404).json({ message: "Không tìm thấy phần mềm" });
     }
+
+    // chặn người dùng truy cập phần mềm bị ẩn
+    if (software.hidden && !includeHidden) {
+      return res.status(403).json({ message: "Phần mềm đã bị ẩn" });
+    }
+
     res.json(software);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -200,13 +211,12 @@ const getLatestSoftwares = async (req, res) => {
   }
 };
 
-
 module.exports = {
   addSoftware,
   getAllSoftware,
   updateSoftware,
   deleteSoftware,
   getSoftwareById,
-  getSoftwareCount,     
-  getLatestSoftwares
+  getSoftwareCount,
+  getLatestSoftwares,
 };

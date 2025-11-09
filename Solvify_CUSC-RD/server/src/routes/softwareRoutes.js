@@ -238,7 +238,6 @@
  *         description: Lỗi server
  */
 
-
 const express = require("express");
 const multer = require("multer");
 const {
@@ -269,9 +268,23 @@ router.get("/", getAllSoftware);
 router.get("/:id", getSoftwareById);
 router.put(
   "/:id",
-  upload.fields([{ name: "images" }, { name: "file" }]),
+  (req, res, next) => {
+    const contentType = req.headers["content-type"] || "";
+
+    // Nếu là multipart -> dùng multer
+    if (contentType.startsWith("multipart/form-data")) {
+      upload.fields([
+        { name: "images", maxCount: 5 },
+        { name: "file", maxCount: 1 },
+      ])(req, res, next);
+    } else {
+      // Không có file -> không dùng multer
+      next();
+    }
+  },
   updateSoftware
 );
+
 router.delete("/:id", deleteSoftware);
 // Đếm tổng số phần mềm
 router.get("/count", getSoftwareCount);

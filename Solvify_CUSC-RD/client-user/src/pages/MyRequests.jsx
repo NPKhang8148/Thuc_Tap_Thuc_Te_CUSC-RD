@@ -41,13 +41,20 @@ const MyRequests = () => {
       setLoading(true);
       try {
         const res = await getMyRequests();
-        setRequests(res.data || []);
+
+        // ẨN yêu cầu có hidden = true
+        const visibleRequests = (res.data || []).filter(
+          (r) => r.hidden !== true
+        );
+
+        setRequests(visibleRequests);
       } catch (err) {
         console.error("❌ Lỗi khi lấy danh sách yêu cầu:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchRequests();
   }, []);
 

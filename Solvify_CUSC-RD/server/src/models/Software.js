@@ -6,6 +6,7 @@ const softwareSchema = new mongoose.Schema({
   content: { type: String }, // nội dung mô tả (từ Word hoặc nhập tay)
   images: [String], // ảnh base64
   url: { type: String },
+  hidden: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

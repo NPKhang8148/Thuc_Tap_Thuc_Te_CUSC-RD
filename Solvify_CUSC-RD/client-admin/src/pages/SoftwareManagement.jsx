@@ -1,3 +1,4 @@
+// SoftwareManagement.jsx 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -24,13 +25,21 @@ import {
   Pagination,
   Stack,
 } from "@mui/material";
-import { Add, Edit, Delete, Close, Search, Refresh } from "@mui/icons-material";
+import {
+  Add,
+  Edit,
+  Delete,
+  Close,
+  Search,
+  Refresh,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import ReactQuill, { Quill } from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import * as mammoth from "mammoth";
 import ImageResize from "quill-image-resize-module-react";
 
-// Đăng ký module resize ảnh và video
 Quill.register("modules/imageResize", ImageResize);
 
 const API_URL = "http://localhost:5000/api/softwares";
@@ -40,15 +49,17 @@ const SoftwareManagement = () => {
   const [softwares, setSoftwares] = useState([]);
   const [categories, setCategories] = useState([]);
 
-  // Bộ lọc
+  // Filters
   const [searchTitle, setSearchTitle] = useState("");
   const [searchContent, setSearchContent] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Phân trang
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [softPerPage] = useState(5);
 
+  // Dialog
   const [open, setOpen] = useState(false);
   const [editingSoftware, setEditingSoftware] = useState(null);
   const [formData, setFormData] = useState({
@@ -60,6 +71,7 @@ const SoftwareManagement = () => {
     url: "",
   });
 
+  // Quill config
   const modules = {
     toolbar: [
       [{ font: [] }, { size: [] }],
@@ -73,11 +85,7 @@ const SoftwareManagement = () => {
       ["clean"],
     ],
     imageResize: {
-      displayStyles: {
-        backgroundColor: "black",
-        border: "none",
-        color: "white",
-      },
+      displayStyles: { backgroundColor: "black", color: "white" },
       modules: ["Resize", "DisplaySize", "Toolbar"],
     },
   };
@@ -101,6 +109,7 @@ const SoftwareManagement = () => {
     "video",
   ];
 
+  // ============================ FETCH DATA ===============================
   useEffect(() => {
     fetchSoftwares();
     fetchCategories();
@@ -108,8 +117,17 @@ const SoftwareManagement = () => {
 
   const fetchSoftwares = async () => {
     try {
-      const res = await axios.get(API_URL);
-      setSoftwares(res.data);
+      const res = await axios.get(API_URL, {
+        params: { includeHidden: true },
+      });
+
+      // Chuẩn hoá dữ liệu cũ (không có hidden)
+      const normalized = res.data.map((s) => ({
+        ...s,
+        hidden: typeof s.hidden === "boolean" ? s.hidden : false,
+      }));
+
+      setSoftwares(normalized.reverse());
     } catch (err) {
       console.error("Error fetching softwares:", err);
     }
@@ -124,33 +142,62 @@ const SoftwareManagement = () => {
     }
   };
 
-  // ====== Lọc dữ liệu ======
+  // ============================ HIDE / SHOW =============================
+  const toggleHidden = async (id) => {
+    try {
+      const target = softwares.find((s) => s._id === id);
+      const newHidden = !(target?.hidden ?? false);
+
+      const res = await axios.put(
+        `${API_URL}/${id}`,
+        { hidden: newHidden }, // gửi JSON, không dùng FormData
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      setSoftwares((prev) =>
+        prev.map((s) => (s._id === id ? { ...s, hidden: res.data.hidden } : s))
+      );
+    } catch (err) {
+      console.error("Error toggling hidden:", err);
+    }
+  };
+
+  // ============================ FILTERING ===============================
   const filteredSoftwares = softwares.filter((s) => {
-    const matchTitle = s.title?.toLowerCase().includes(searchTitle.toLowerCase());
-    const matchContent = s.content?.toLowerCase().includes(searchContent.toLowerCase());
+    const matchTitle = s.title
+      ?.toLowerCase()
+      .includes(searchTitle.toLowerCase());
+    const matchContent = s.content
+      ?.toLowerCase()
+      .includes(searchContent.toLowerCase());
     const matchCategory =
       !selectedCategory || s.category?._id === selectedCategory;
-    return matchTitle && matchContent && matchCategory;
+
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "visible" && !s.hidden) ||
+      (statusFilter === "hidden" && s.hidden);
+
+    return matchTitle && matchContent && matchCategory && matchStatus;
   });
 
-  // ====== Phân trang ======
+  // ============================ PAGINATION ==============================
   const indexOfLast = currentPage * softPerPage;
   const indexOfFirst = indexOfLast - softPerPage;
   const currentSoftwares = filteredSoftwares.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredSoftwares.length / softPerPage);
 
-  const handlePageChange = (event, value) => {
-    setCurrentPage(value);
-  };
+  const handlePageChange = (_, value) => setCurrentPage(value);
 
   const handleResetFilters = () => {
     setSearchTitle("");
     setSearchContent("");
     setSelectedCategory("");
+    setStatusFilter("all");
     setCurrentPage(1);
   };
 
-  // ====== CRUD ======
+  // ============================ CRUD ===================================
   const handleOpen = (software = null) => {
     if (software) {
       setEditingSoftware(software);
@@ -185,10 +232,7 @@ const SoftwareManagement = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...files],
-    }));
+    setFormData((prev) => ({ ...prev, images: [...prev.images, ...files] }));
   };
 
   const handleRemoveImage = (index) => {
@@ -198,9 +242,7 @@ const SoftwareManagement = () => {
     }));
   };
 
-  const handleRemoveUrl = () => {
-    setFormData((prev) => ({ ...prev, url: "" }));
-  };
+  const handleRemoveUrl = () => setFormData((prev) => ({ ...prev, url: "" }));
 
   const handleWordUpload = async (e) => {
     const file = e.target.files[0];
@@ -208,13 +250,16 @@ const SoftwareManagement = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer }, {
-        convertImage: mammoth.images.inline((image) =>
-          image.read("base64").then((imageBuffer) => ({
-            src: `data:${image.contentType};base64,${imageBuffer}`,
-          }))
-        ),
-      });
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer },
+        {
+          convertImage: mammoth.images.inline((image) =>
+            image.read("base64").then((img) => ({
+              src: `data:${image.contentType};base64,${img}`,
+            }))
+          ),
+        }
+      );
 
       let html = result.value
         .replace(/<p>/g, "<p style='margin-bottom:10px; line-height:1.6;'>")
@@ -235,28 +280,51 @@ const SoftwareManagement = () => {
 
   const handleSubmit = async () => {
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title || "");
-      formDataToSend.append("content", formData.content || "");
-      formDataToSend.append("category", String(formData.category || ""));
-      formDataToSend.append("url", formData.url ? String(formData.url).trim() : "");
+      const hasImages =
+        formData.images && formData.images.some((i) => typeof i !== "string");
+      const hasFile = !!formData.wordFile;
+      const isMultipart = hasImages || hasFile;
 
-      if (formData.images && formData.images.length > 0) {
-        formData.images.forEach((file) => {
-          formDataToSend.append("images", file);
-        });
-      }
+      let payload;
+      let headers;
 
-      if (formData.wordFile) {
-        formDataToSend.append("file", formData.wordFile);
-      }
+      if (!isMultipart) {
+        // Không có file → gửi JSON
+        payload = {
+          title: formData.title,
+          content: formData.content,
+          category: formData.category,
+          url: formData.url.trim(),
+        };
 
-      const config = { headers: { "Content-Type": "multipart/form-data" } };
-
-      if (editingSoftware) {
-        await axios.put(`${API_URL}/${editingSoftware._id}`, formDataToSend, config);
+        headers = { "Content-Type": "application/json" };
       } else {
-        await axios.post(`${API_URL}/add`, formDataToSend, config);
+        // Có file → FormData + multipart
+        payload = new FormData();
+        payload.append("title", formData.title);
+        payload.append("content", formData.content);
+        payload.append("category", String(formData.category || ""));
+        payload.append("url", formData.url.trim());
+
+        if (hasImages) {
+          formData.images.forEach((file) => {
+            if (typeof file !== "string") payload.append("images", file);
+          });
+        }
+
+        if (hasFile) payload.append("file", formData.wordFile);
+
+        headers = { "Content-Type": "multipart/form-data" };
+      }
+
+      // UPDATE
+      if (editingSoftware) {
+        await axios.put(`${API_URL}/${editingSoftware._id}`, payload, {
+          headers,
+        });
+      } else {
+        // ADD
+        await axios.post(`${API_URL}/add`, payload, { headers });
       }
 
       fetchSoftwares();
@@ -267,23 +335,24 @@ const SoftwareManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xóa phần mềm này?")) {
-      try {
-        await axios.delete(`${API_URL}/${id}`);
-        fetchSoftwares();
-      } catch (err) {
-        console.error("Error deleting software:", err);
-      }
+    if (!window.confirm("Bạn có chắc muốn xóa phần mềm này?")) return;
+
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      fetchSoftwares();
+    } catch (err) {
+      console.error("Error deleting software:", err);
     }
   };
 
+  // ============================ UI ====================================
   return (
     <Container sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
         Quản lý phần mềm
       </Typography>
 
-      {/* Bộ lọc tìm kiếm */}
+      {/* ================== FILTERS ================== */}
       <Box
         display="flex"
         flexWrap="wrap"
@@ -336,6 +405,20 @@ const SoftwareManagement = () => {
           </Select>
         </FormControl>
 
+        {/* FILTER hidden/visible */}
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Trạng thái</InputLabel>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            label="Trạng thái"
+          >
+            <MenuItem value="all">Tất cả</MenuItem>
+            <MenuItem value="visible">Đang hiển thị</MenuItem>
+            <MenuItem value="hidden">Đang ẩn</MenuItem>
+          </Select>
+        </FormControl>
+
         <Button
           variant="outlined"
           color="secondary"
@@ -346,7 +429,7 @@ const SoftwareManagement = () => {
         </Button>
       </Box>
 
-      {/* Nút thêm */}
+      {/* ADD */}
       <Button
         variant="contained"
         startIcon={<Add />}
@@ -356,7 +439,7 @@ const SoftwareManagement = () => {
         Thêm phần mềm
       </Button>
 
-      {/* Bảng hiển thị */}
+      {/* TABLE */}
       <Table>
         <TableHead>
           <TableRow>
@@ -366,13 +449,15 @@ const SoftwareManagement = () => {
             <TableCell>Nội dung</TableCell>
             <TableCell>URL</TableCell>
             <TableCell>Ảnh</TableCell>
+            <TableCell>Ẩn/Hiện</TableCell>
             <TableCell>Hành động</TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {currentSoftwares.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} align="center">
+              <TableCell colSpan={8} align="center">
                 Không có dữ liệu phù hợp
               </TableCell>
             </TableRow>
@@ -380,25 +465,34 @@ const SoftwareManagement = () => {
             currentSoftwares.map((software, index) => (
               <TableRow key={software._id}>
                 <TableCell>{indexOfFirst + index + 1}</TableCell>
-                <TableCell>{software.title}</TableCell>
+
+                <TableCell sx={{ opacity: software.hidden ? 0.4 : 1 }}>
+                  {software.title}
+                </TableCell>
+
                 <TableCell>
                   {software.category && typeof software.category === "object"
                     ? software.category.name
                     : "-"}
                 </TableCell>
+
                 <TableCell sx={{ maxWidth: 300 }}>
                   <div
-                    style={{ maxHeight: "120px", overflow: "hidden" }}
+                    style={{
+                      maxHeight: "120px",
+                      overflow: "hidden",
+                      opacity: software.hidden ? 0.4 : 1,
+                    }}
                     dangerouslySetInnerHTML={{ __html: software.content }}
                   />
                 </TableCell>
+
                 <TableCell>
                   {software.url ? (
                     <a
                       href={software.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "blue" }}
                     >
                       {software.url}
                     </a>
@@ -406,6 +500,7 @@ const SoftwareManagement = () => {
                     "-"
                   )}
                 </TableCell>
+
                 <TableCell>
                   {software.images?.map((img, idx) => (
                     <img
@@ -417,13 +512,25 @@ const SoftwareManagement = () => {
                       style={{
                         width: "50px",
                         marginRight: "5px",
-                        borderRadius: "4px",
+                        borderRadius: 4,
+                        opacity: software.hidden ? 0.4 : 1,
                       }}
                     />
                   ))}
                 </TableCell>
+
+                {/* Ẩn / Hiện */}
                 <TableCell>
-                  <IconButton onClick={() => handleOpen(software)} color="primary">
+                  <IconButton onClick={() => toggleHidden(software._id)}>
+                    {software.hidden ? <Visibility /> : <VisibilityOff />}
+                  </IconButton>
+                </TableCell>
+
+                <TableCell>
+                  <IconButton
+                    onClick={() => handleOpen(software)}
+                    color="primary"
+                  >
                     <Edit />
                   </IconButton>
                   <IconButton
@@ -439,19 +546,18 @@ const SoftwareManagement = () => {
         </TableBody>
       </Table>
 
-      {/* Phân trang */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <Stack spacing={2} alignItems="center" mt={3}>
           <Pagination
             count={totalPages}
             page={currentPage}
             onChange={handlePageChange}
-            color="primary"
           />
         </Stack>
       )}
 
-      {/* Dialog thêm/sửa phần mềm */}
+      {/* DIALOG */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         <DialogTitle>
           {editingSoftware ? "Chỉnh sửa phần mềm" : "Thêm phần mềm"}
@@ -483,7 +589,11 @@ const SoftwareManagement = () => {
 
           <Box mt={2}>
             <Typography variant="subtitle2">Upload file Word</Typography>
-            <input type="file" accept=".doc,.docx" onChange={handleWordUpload} />
+            <input
+              type="file"
+              accept=".doc,.docx"
+              onChange={handleWordUpload}
+            />
           </Box>
 
           <Box mt={2}>
@@ -508,14 +618,13 @@ const SoftwareManagement = () => {
             value={formData.url}
             onChange={handleChange}
             InputProps={{
-              endAdornment:
-                formData.url && (
-                  <InputAdornment position="end">
-                    <IconButton onClick={handleRemoveUrl} size="small">
-                      <Close fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              endAdornment: formData.url && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={handleRemoveUrl}>
+                    <Close fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
             }}
           />
 
@@ -544,6 +653,7 @@ const SoftwareManagement = () => {
                       border: "1px solid #ccc",
                     }}
                   />
+
                   <IconButton
                     size="small"
                     sx={{
@@ -551,7 +661,7 @@ const SoftwareManagement = () => {
                       top: -8,
                       right: -8,
                       backgroundColor: "rgba(0,0,0,0.5)",
-                      color: "#fff",
+                      color: "white",
                       "&:hover": { backgroundColor: "red" },
                     }}
                     onClick={() => handleRemoveImage(idx)}

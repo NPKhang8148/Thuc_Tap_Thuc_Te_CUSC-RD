@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   name: Categories
- *   description: API quản lý danh mục sản phẩm
+ *   description: Quản lý danh mục phần mềm
  */
 
 /**
@@ -22,15 +22,14 @@
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Thực phẩm bổ sung"
- *               description:
- *                 type: string
- *                 example: "Các sản phẩm hỗ trợ dinh dưỡng thể hình"
+ *                 example: Ứng dụng di động
  *     responses:
  *       201:
  *         description: Tạo danh mục thành công
- *       400:
- *         description: Dữ liệu không hợp lệ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
  *       500:
  *         description: Lỗi server
  */
@@ -39,27 +38,17 @@
  * @swagger
  * /api/categories:
  *   get:
- *     summary: Lấy danh sách tất cả danh mục
+ *     summary: Lấy tất cả danh mục
  *     tags: [Categories]
  *     responses:
  *       200:
- *         description: Danh sách danh mục
+ *         description: Danh sách tất cả danh mục
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                     example: "66c70d92a7f5f5e4bcd128ab"
- *                   name:
- *                     type: string
- *                     example: "Whey Protein"
- *                   description:
- *                     type: string
- *                     example: "Sản phẩm bổ sung protein chất lượng cao"
+ *                 $ref: '#/components/schemas/Category'
  *       500:
  *         description: Lỗi server
  */
@@ -68,7 +57,7 @@
  * @swagger
  * /api/categories/{id}:
  *   get:
- *     summary: Lấy thông tin danh mục theo ID
+ *     summary: Lấy thông tin chi tiết danh mục theo ID
  *     tags: [Categories]
  *     parameters:
  *       - in: path
@@ -83,17 +72,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 _id:
- *                   type: string
- *                   example: "66c70d92a7f5f5e4bcd128ab"
- *                 name:
- *                   type: string
- *                   example: "Dụng cụ tập luyện"
- *                 description:
- *                   type: string
- *                   example: "Các thiết bị hỗ trợ luyện tập thể hình"
+ *               $ref: '#/components/schemas/Category'
  *       404:
  *         description: Không tìm thấy danh mục
  *       500:
@@ -112,7 +91,7 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của danh mục cần cập nhật
+ *         description: ID của danh mục
  *     requestBody:
  *       required: true
  *       content:
@@ -122,41 +101,95 @@
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Phụ kiện gym"
- *               description:
- *                 type: string
- *                 example: "Các loại dây kháng lực, găng tay, đai lưng..."
+ *                 example: Ứng dụng web
  *     responses:
  *       200:
- *         description: Cập nhật danh mục thành công
- *       400:
- *         description: Dữ liệu không hợp lệ
+ *         description: Cập nhật thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
  *       404:
  *         description: Không tìm thấy danh mục
  *       500:
  *         description: Lỗi server
  */
 
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   delete:
+ *     summary: Xóa danh mục (chỉ khi không có phần mềm trực thuộc)
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của danh mục cần xóa
+ *     responses:
+ *       200:
+ *         description: Xóa danh mục thành công
+ *       400:
+ *         description: Không thể xóa vì danh mục có phần mềm trực thuộc
+ *       404:
+ *         description: Không tìm thấy danh mục
+ *       500:
+ *         description: Lỗi server
+ */
 
-const express = require('express');
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Category:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID của danh mục
+ *         name:
+ *           type: string
+ *           description: Tên danh mục
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Ngày tạo
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Ngày cập nhật
+ *       example:
+ *         _id: "671c7f9c89a4b52cf8132a11"
+ *         name: "Ứng dụng di động"
+ *         createdAt: "2025-11-05T08:30:00Z"
+ *         updatedAt: "2025-11-06T09:15:00Z"
+ */
+
+const express = require("express");
 const router = express.Router();
 const {
   createCategory,
   getAllCategories,
   updateCategory,
   getCategoryById,
-} = require('../controllers/categoryController');
+  deleteCategory,
+} = require("../controllers/categoryController");
 
 // Tạo danh mục
-router.post('/', createCategory);
+router.post("/", createCategory);
 
 // Lấy tất cả danh mục
-router.get('/', getAllCategories);
+router.get("/", getAllCategories);
 
 // Lấy danh mục theo ID
-router.get('/:id', getCategoryById);
+router.get("/:id", getCategoryById);
 
 // Cập nhật danh mục
-router.put('/:id', updateCategory);
+router.put("/:id", updateCategory);
+
+// Xóa danh mục (chỉ khi không có phần mềm trực thuộc)
+router.delete("/:id", deleteCategory);
 
 module.exports = router;

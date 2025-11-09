@@ -22,6 +22,8 @@ import {
 import { Edit, Delete, Close } from "@mui/icons-material";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 const API_URL = "http://localhost:5000/api/seminars";
 
@@ -40,6 +42,7 @@ const SeminarManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 5;
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Form
   const [form, setForm] = useState({
@@ -145,6 +148,13 @@ const SeminarManagement = () => {
       });
     }
 
+    // Lọc theo trạng thái ẩn / hiện
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((s) =>
+        statusFilter === "hidden" ? s.isHidden === true : s.isHidden !== true
+      );
+    }
+
     // Sắp xếp lại (mới nhất trước)
     filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -215,6 +225,21 @@ const SeminarManagement = () => {
       } catch (err) {
         console.error("❌ Lỗi khi xóa seminar:", err);
       }
+    }
+  };
+
+  const handleToggleHidden = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/${id}/toggle-hidden`);
+
+      // Cập nhật trạng thái trực tiếp trong allSeminars mà không chạy lại tất cả filters
+      setAllSeminars((prev) =>
+        prev.map((item) =>
+          item._id === id ? { ...item, isHidden: !item.isHidden } : item
+        )
+      );
+    } catch (err) {
+      console.error("❌ Lỗi khi toggle hidden:", err);
     }
   };
 
@@ -360,6 +385,22 @@ const SeminarManagement = () => {
           size="small"
           sx={{ width: 120 }}
         />
+        <TextField
+          select
+          SelectProps={{ native: true }}
+          label="Trạng thái"
+          size="small"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ width: 160 }}
+        >
+          <option value="all">Tất cả</option>
+          <option value="visible">Đang hiển thị</option>
+          <option value="hidden">Đang ẩn</option>
+        </TextField>
         <Button variant="outlined" onClick={handleResetFilters}>
           Reset
         </Button>
@@ -387,7 +428,13 @@ const SeminarManagement = () => {
         </TableHead>
         <TableBody>
           {seminars.map((s, idx) => (
-            <TableRow key={s._id}>
+            <TableRow
+              key={s._id}
+              sx={{
+                opacity: s.isHidden ? 0.4 : 1,
+                transition: "0.25s",
+              }}
+            >
               <TableCell>{(page - 1) * limit + idx + 1}</TableCell>
               <TableCell>
                 {s.speakers
@@ -517,6 +564,15 @@ const SeminarManagement = () => {
                   size="small"
                 >
                   <Delete />
+                </IconButton>
+                {/* Nút Ẩn / Hiện */}
+                <IconButton
+                  color={s.isHidden ? "warning" : "success"}
+                  onClick={() => handleToggleHidden(s._id)}
+                  size="small"
+                  title={s.isHidden ? "Hiện lại chuyên đề" : "Ẩn chuyên đề"}
+                >
+                  {s.isHidden ? <VisibilityOffIcon /> : <VisibilityIcon />}
                 </IconButton>
               </TableCell>
             </TableRow>

@@ -20,6 +20,8 @@ const requestSchema = new mongoose.Schema(
       enum: ["pending", "in-progress", "completed", "canceled"],
       default: "pending",
     },
+    // Thêm mới
+    hidden: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

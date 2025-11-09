@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   name: Requests
- *   description: API quản lý yêu cầu từ người dùng và quản trị viên
+ *   description: Quản lý yêu cầu khách hàng (dành cho người dùng và admin)
  */
 
 /**
@@ -12,7 +12,7 @@
  *     summary: Người dùng gửi yêu cầu mới
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -25,21 +25,19 @@
  *             properties:
  *               title:
  *                 type: string
- *                 example: "Yêu cầu hỗ trợ kỹ thuật"
+ *                 example: Yêu cầu thêm chức năng báo cáo
  *               description:
  *                 type: string
- *                 example: "Tôi gặp lỗi khi đăng sản phẩm"
+ *                 example: Tôi muốn có thêm tính năng xuất báo cáo PDF trong phần mềm.
  *               priority:
  *                 type: string
- *                 enum: [low, medium, high]
- *                 example: "high"
+ *                 enum: [Thấp, Trung bình, Cao, Khẩn cấp]
+ *                 example: Cao
  *     responses:
  *       201:
  *         description: Gửi yêu cầu thành công
- *       400:
- *         description: Dữ liệu không hợp lệ
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Chưa đăng nhập hoặc token không hợp lệ
  *       500:
  *         description: Lỗi server
  */
@@ -48,34 +46,41 @@
  * @swagger
  * /api/requests/my:
  *   get:
- *     summary: Người dùng xem danh sách yêu cầu của chính mình
+ *     summary: Người dùng xem danh sách yêu cầu của mình
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Danh sách yêu cầu của người dùng
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                     example: "66bfae12a9d21a14e17b3b90"
- *                   title:
- *                     type: string
- *                     example: "Cần hỗ trợ cập nhật đơn hàng"
- *                   status:
- *                     type: string
- *                     example: "pending"
- *                   priority:
- *                     type: string
- *                     example: "high"
+ *         description: Danh sách yêu cầu của người dùng hiện tại
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Chưa đăng nhập hoặc token không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+
+/**
+ * @swagger
+ * /api/requests/{id}/toggle-hidden:
+ *   patch:
+ *     summary: Ẩn hoặc hiện yêu cầu (chỉ admin)
+ *     tags: [Requests]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của yêu cầu cần ẩn/hiện
+ *     responses:
+ *       200:
+ *         description: Thay đổi trạng thái ẩn/hiện thành công
+ *       404:
+ *         description: Không tìm thấy yêu cầu
+ *       401:
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -84,23 +89,15 @@
  * @swagger
  * /api/requests/count:
  *   get:
- *     summary: Admin xem tổng số yêu cầu
+ *     summary: Lấy tổng số lượng yêu cầu (admin)
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Tổng số yêu cầu
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 totalRequests:
- *                   type: integer
- *                   example: 124
+ *         description: Trả về tổng số yêu cầu
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -109,31 +106,15 @@
  * @swagger
  * /api/requests/urgent:
  *   get:
- *     summary: Admin lấy danh sách các yêu cầu khẩn cấp
+ *     summary: Lấy danh sách các yêu cầu khẩn cấp (admin)
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Danh sách yêu cầu khẩn cấp
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                     example: "66bfae12a9d21a14e17b3b90"
- *                   title:
- *                     type: string
- *                     example: "Sự cố thanh toán"
- *                   priority:
- *                     type: string
- *                     example: "high"
+ *         description: Danh sách các yêu cầu khẩn cấp
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -145,12 +126,12 @@
  *     summary: Admin xem tất cả yêu cầu
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Danh sách tất cả yêu cầu
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -159,10 +140,10 @@
  * @swagger
  * /api/requests/{id}:
  *   get:
- *     summary: Admin xem chi tiết yêu cầu theo ID
+ *     summary: Admin xem chi tiết 1 yêu cầu theo ID
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -172,11 +153,11 @@
  *         description: ID của yêu cầu
  *     responses:
  *       200:
- *         description: Thông tin chi tiết yêu cầu
+ *         description: Thông tin chi tiết của yêu cầu
  *       404:
  *         description: Không tìm thấy yêu cầu
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -185,37 +166,32 @@
  * @swagger
  * /api/requests:
  *   post:
- *     summary: Admin tạo yêu cầu mới
+ *     summary: Admin tạo yêu cầu mới (tùy chọn)
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - title
- *               - description
  *             properties:
  *               title:
  *                 type: string
- *                 example: "Tạo yêu cầu kiểm tra hệ thống"
+ *                 example: Yêu cầu cập nhật hệ thống
  *               description:
  *                 type: string
- *                 example: "Yêu cầu kiểm tra server định kỳ"
+ *                 example: Cần cập nhật bảo mật cho các phần mềm khách hàng.
  *               priority:
  *                 type: string
- *                 enum: [low, medium, high]
- *                 example: "medium"
+ *                 enum: [Thấp, Trung bình, Cao, Khẩn cấp]
+ *                 example: Trung bình
  *     responses:
  *       201:
  *         description: Tạo yêu cầu thành công
- *       400:
- *         description: Dữ liệu không hợp lệ
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -224,10 +200,10 @@
  * @swagger
  * /api/requests/{id}:
  *   put:
- *     summary: Admin cập nhật yêu cầu theo ID
+ *     summary: Cập nhật yêu cầu (admin)
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -242,24 +218,23 @@
  *           schema:
  *             type: object
  *             properties:
- *               status:
+ *               title:
  *                 type: string
- *                 example: "resolved"
+ *                 example: Cập nhật tính năng mới
+ *               description:
+ *                 type: string
+ *                 example: Cập nhật giao diện người dùng và tối ưu hiệu năng.
  *               priority:
  *                 type: string
- *                 example: "low"
- *               note:
- *                 type: string
- *                 example: "Đã xử lý xong yêu cầu"
+ *                 enum: [Thấp, Trung bình, Cao, Khẩn cấp]
+ *                 example: Cao
  *     responses:
  *       200:
  *         description: Cập nhật yêu cầu thành công
- *       400:
- *         description: Dữ liệu không hợp lệ
  *       404:
  *         description: Không tìm thấy yêu cầu
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
@@ -268,10 +243,10 @@
  * @swagger
  * /api/requests/{id}:
  *   delete:
- *     summary: Admin xóa yêu cầu theo ID
+ *     summary: Xóa yêu cầu (admin)
  *     tags: [Requests]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -285,11 +260,48 @@
  *       404:
  *         description: Không tìm thấy yêu cầu
  *       401:
- *         description: Không có quyền truy cập
+ *         description: Không có quyền admin
  *       500:
  *         description: Lỗi server
  */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Request:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         priority:
+ *           type: string
+ *           enum: [Thấp, Trung bình, Cao, Khẩn cấp]
+ *         user:
+ *           type: string
+ *           description: ID của người gửi yêu cầu
+ *         hidden:
+ *           type: boolean
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *       example:
+ *         _id: "672b1a2f8c7d9e12f95b4a67"
+ *         title: "Yêu cầu hỗ trợ khẩn cấp"
+ *         description: "Phần mềm bị lỗi khi xuất báo cáo PDF"
+ *         priority: "Khẩn cấp"
+ *         user: "671a9e5b32d6ab45c123f6d8"
+ *         hidden: false
+ *         createdAt: "2025-11-07T08:45:00Z"
+ *         updatedAt: "2025-11-07T10:30:00Z"
+ */
 
 const express = require("express");
 const {
@@ -302,6 +314,7 @@ const {
   getMyRequests,
   getRequestCount,
   getUrgentRequests,
+  toggleHidden,
 } = require("../controllers/requestController");
 
 const verifyToken = require("../middlewares/verifyToken"); // middleware cho user
@@ -312,6 +325,9 @@ const router = express.Router();
 // --- User ---
 router.post("/user", verifyToken, createRequestByUser); // User gửi yêu cầu
 router.get("/my", verifyToken, getMyRequests); // User xem yêu cầu của mình
+
+// Thêm route ẩn/hiện
+router.patch("/:id/toggle-hidden", verifyAdminToken, toggleHidden);
 
 // --- Admin ---
 router.get("/count", verifyAdminToken, getRequestCount); // Đếm tổng số yêu cầu

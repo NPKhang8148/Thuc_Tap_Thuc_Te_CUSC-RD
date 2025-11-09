@@ -1,4 +1,4 @@
-// frontend/src/pages/ToolManagement.jsx
+// src/pages/ToolManagement.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -18,8 +18,18 @@ import {
   TextField,
   Pagination,
   Stack,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
-import { Add, Edit, Delete } from "@mui/icons-material";
+import {
+  Add,
+  Edit,
+  Delete,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 
 const API_URL = "http://localhost:5000/api/tools";
 
@@ -29,16 +39,18 @@ export default function ToolManagement() {
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // State cho phân trang & tìm kiếm
+  // phân trang + tìm kiếm + filter
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
 
-  // Lấy danh sách tools
+  // fetch tools từ backend (đã có field hidden)
   const fetchTools = async () => {
     try {
       const res = await axios.get(API_URL);
-      setTools(res.data);
+      const sorted = [...res.data].reverse();
+      setTools(sorted);
     } catch (error) {
       console.error("Error fetching tools:", error);
     }
@@ -48,7 +60,7 @@ export default function ToolManagement() {
     fetchTools();
   }, []);
 
-  // Mở dialog
+  // mở dialog
   const handleOpen = (tool = null) => {
     if (tool) {
       setForm({
@@ -66,7 +78,7 @@ export default function ToolManagement() {
 
   const handleClose = () => setOpen(false);
 
-  // Submit form (add/update)
+  // thêm / sửa tool
   const handleSubmit = async () => {
     try {
       if (editingId) {
@@ -74,6 +86,7 @@ export default function ToolManagement() {
       } else {
         await axios.post(API_URL, form);
       }
+
       setForm({ name: "", description: "", url: "" });
       setEditingId(null);
       fetchTools();
@@ -83,9 +96,9 @@ export default function ToolManagement() {
     }
   };
 
-  // Delete tool
+  // xóa tool
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa tool này?")) {
+    if (window.confirm("Bạn có chắc muốn xóa tool này?")) {
       try {
         await axios.delete(`${API_URL}/${id}`);
         fetchTools();
@@ -95,10 +108,24 @@ export default function ToolManagement() {
     }
   };
 
-  // --- Xử lý lọc và phân trang ---
-  const filteredTools = tools.filter((tool) =>
-    tool.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // toggle ẩn / hiện tool — gọi API backend
+  const toggleToolVisibility = async (id) => {
+    try {
+      await axios.put(`${API_URL}/${id}/toggle`);
+      fetchTools();
+    } catch (error) {
+      console.error("Error toggling visibility:", error);
+    }
+  };
+
+  // lọc + tìm kiếm
+  const filteredTools = tools
+    .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((tool) => {
+      if (filter === "visible") return !tool.hidden;
+      if (filter === "hidden") return tool.hidden;
+      return true;
+    });
 
   const totalPages = Math.ceil(filteredTools.length / rowsPerPage);
   const paginatedTools = filteredTools.slice(
@@ -106,16 +133,13 @@ export default function ToolManagement() {
     page * rowsPerPage
   );
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
-
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
         Quản lý Tools
       </Typography>
 
+      {/* Thanh hành động */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -130,17 +154,34 @@ export default function ToolManagement() {
           Thêm Tool
         </Button>
 
-        {/* Ô tìm kiếm */}
-        <TextField
-          label="Tìm kiếm tool..."
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1); // reset về trang 1 khi tìm
-          }}
-        />
+        <Stack direction="row" spacing={2}>
+          <TextField
+            label="Tìm kiếm tool..."
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+
+          <FormControl size="small">
+            <InputLabel>Bộ lọc</InputLabel>
+            <Select
+              value={filter}
+              label="Bộ lọc"
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <MenuItem value="all">Tất cả</MenuItem>
+              <MenuItem value="visible">Đang hiển thị</MenuItem>
+              <MenuItem value="hidden">Đang ẩn</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
       </Stack>
 
       <Paper>
@@ -154,9 +195,10 @@ export default function ToolManagement() {
               <TableCell>Hành động</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {paginatedTools.map((tool, index) => (
-              <TableRow key={tool._id}>
+              <TableRow key={tool._id} sx={{ opacity: tool.hidden ? 0.5 : 1 }}>
                 <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
                 <TableCell>{tool.name}</TableCell>
                 <TableCell>{tool.description}</TableCell>
@@ -165,21 +207,32 @@ export default function ToolManagement() {
                     {tool.url}
                   </a>
                 </TableCell>
+
                 <TableCell>
                   <Button
                     startIcon={<Edit />}
                     onClick={() => handleOpen(tool)}
                     size="small"
                   />
+
                   <Button
                     startIcon={<Delete />}
                     onClick={() => handleDelete(tool._id)}
-                    color="error"
                     size="small"
+                    color="error"
+                  />
+
+                  {/* toggle ẩn / hiện */}
+                  <Button
+                    startIcon={tool.hidden ? <Visibility /> : <VisibilityOff />}
+                    onClick={() => toggleToolVisibility(tool._id)}
+                    size="small"
+                    color={tool.hidden ? "primary" : "warning"}
                   />
                 </TableCell>
               </TableRow>
             ))}
+
             {paginatedTools.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} align="center">
@@ -197,13 +250,12 @@ export default function ToolManagement() {
           <Pagination
             count={totalPages}
             page={page}
-            onChange={handleChangePage}
-            color="primary"
+            onChange={(e, v) => setPage(v)}
           />
         </Stack>
       )}
 
-      {/* Dialog thêm/sửa tool */}
+      {/* Dialog thêm/sửa */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>{editingId ? "Chỉnh sửa Tool" : "Thêm Tool"}</DialogTitle>
         <DialogContent>

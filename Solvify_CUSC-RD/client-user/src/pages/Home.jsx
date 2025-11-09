@@ -23,6 +23,8 @@ const Home = () => {
   const [seminars, setSeminars] = useState([]);
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(false);
+  const sortByDate = (arr) =>
+    [...arr].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   // Lấy danh mục
   useEffect(() => {
@@ -44,10 +46,13 @@ const Home = () => {
   useEffect(() => {
     const fetchSoftwares = async () => {
       try {
-        const res = await axios.get("/api/softwares?sort=-createdAt&limit=6");
-        setSoftwares(res.data.data || res.data);
+        const res = await axios.get("/api/softwares");
+        const data = res.data.data || res.data;
+        // Lọc các phần mềm có hidden = false
+        const visibleData = data.filter((item) => !item.hidden);
+        setSoftwares(sortByDate(visibleData).slice(0, 6));
       } catch (err) {
-        console.error("Lỗi khi lấy phần mềm:", err);
+        console.error("Lỗi:", err);
       }
     };
     fetchSoftwares();
@@ -57,10 +62,13 @@ const Home = () => {
   useEffect(() => {
     const fetchSeminars = async () => {
       try {
-        const res = await axios.get("/api/seminars?sort=-createdAt&limit=6");
-        setSeminars(res.data.data || res.data);
+        const res = await axios.get("/api/seminars");
+        const data = res.data.data || res.data;
+        // Lọc chuyên đề có hidden = false
+        const visibleData = data.filter((item) => !item.hidden);
+        setSeminars(sortByDate(visibleData).slice(0, 6));
       } catch (err) {
-        console.error("Lỗi khi lấy chuyên đề:", err);
+        console.error("Lỗi:", err);
       }
     };
     fetchSeminars();
@@ -70,10 +78,13 @@ const Home = () => {
   useEffect(() => {
     const fetchTools = async () => {
       try {
-        const res = await axios.get("/api/tools?sort=-createdAt&limit=6");
-        setTools(res.data.data || res.data);
+        const res = await axios.get("/api/tools");
+        const data = res.data.data || res.data;
+        // Lọc tools có hidden = false
+        const visibleData = data.filter((item) => !item.hidden);
+        setTools(sortByDate(visibleData).slice(0, 6));
       } catch (err) {
-        console.error("Lỗi khi lấy tools:", err);
+        console.error("Lỗi:", err);
       }
     };
     fetchTools();
@@ -96,7 +107,7 @@ const Home = () => {
           <CircularProgress sx={{ mt: 4 }} />
         ) : (
           <Grid container spacing={2} justifyContent="center" sx={{ mt: 3 }}>
-            {categories.map((cat) => (
+            {categories.slice(0, 6).map((cat) => (
               <Grid item key={cat._id} xs={12} sm={6} md={4} lg={3}>
                 <CategoryCard
                   title={cat.name || cat.title}
@@ -200,7 +211,7 @@ const FadeInSection = ({ background, title, children }) => (
 );
 
 /* -------------------------------
-   Hero Section (giữ nguyên)
+   Hero Section 
 -------------------------------- */
 const Hero = () => (
   <section style={{ marginBottom: "60px" }}>
@@ -288,13 +299,14 @@ const ItemGrid = ({ items, onClick, type, showDescription = true }) => {
 };
 
 /* -------------------------------
-   Thẻ danh mục (giữ nguyên)
+   Thẻ danh mục 
 -------------------------------- */
 const CategoryCard = ({ title, description, onClick }) => (
   <Card
     onClick={onClick}
     sx={{
       height: 200,
+      width: 400,
       borderRadius: 2,
       border: "1px solid rgba(255,255,255,0.2)",
       backgroundColor: "rgba(240,240,240,0.3)",

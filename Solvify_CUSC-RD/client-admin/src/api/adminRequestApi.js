@@ -20,3 +20,5 @@ export const getRequestById = (id) => API.get(`/${id}`);
 export const createRequest = (data) => API.post("/", data);
 export const updateRequest = (id, data) => API.put(`/${id}`, data);
 export const deleteRequest = (id) => API.delete(`/${id}`);
+//API mới
+export const toggleHidden = (id) => API.patch(`/${id}/toggle-hidden`);

@@ -16,9 +16,14 @@ exports.createSeminar = async (req, res) => {
 // Lấy danh sách seminar
 exports.getSeminars = async (req, res) => {
   try {
-    const seminars = await Seminar.find().select(
-      "title date startTime endTime location speakers inviteEmails createdAt"
+    const includeHidden = req.query.includeHidden === "true";
+
+    const filter = includeHidden ? {} : { hidden: false };
+
+    const seminars = await Seminar.find(filter).select(
+      "title date startTime endTime location speakers inviteEmails hidden createdAt"
     );
+
     res.json(seminars);
   } catch (err) {
     console.error("❌ Lỗi getSeminars:", err.message);
@@ -188,6 +193,26 @@ exports.getLatestSeminars = async (req, res) => {
     res.json(latest);
   } catch (err) {
     console.error("❌ Lỗi getLatestSeminars:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Toggle hidden (ẩn/hiện seminar)
+exports.toggleHiddenSeminar = async (req, res) => {
+  try {
+    const seminar = await Seminar.findById(req.params.id);
+    if (!seminar)
+      return res.status(404).json({ error: "Không tìm thấy seminar" });
+
+    seminar.hidden = !seminar.hidden;
+    await seminar.save();
+
+    res.json({
+      message: `✅ Seminar đã được ${seminar.hidden ? "ẩn" : "hiện"}`,
+      hidden: seminar.hidden,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi toggleHiddenSeminar:", err.message);
     res.status(500).json({ error: err.message });
   }
 };

@@ -27,11 +27,19 @@ export default function ToolsPage() {
     const fetchTools = async () => {
       try {
         const res = await axios.get(API_URL);
-        setTools(res.data);
+
+        // Sort tool mới nhất lên đầu (giống admin)
+        const sorted = [...res.data].reverse();
+
+        // Lọc tool dựa vào hidden từ backend
+        const visibleTools = sorted.filter((tool) => !tool.hidden);
+
+        setTools(visibleTools);
       } catch (error) {
         console.error("Error fetching tools:", error);
       }
     };
+
     fetchTools();
   }, []);
 
@@ -56,7 +64,6 @@ export default function ToolsPage() {
         flexDirection: "column",
       }}
     >
-      {/* Background Particles */}
       <div
         style={{
           position: "absolute",
@@ -68,14 +75,13 @@ export default function ToolsPage() {
         <Particles particleCount={300} particleSpread={8} />
       </div>
 
-      {/* Nội dung chính */}
       <Container
         sx={{
           pt: 6,
-          pb: 8, // chừa khoảng trống để pagination không đè
+          pb: 8,
           position: "relative",
           zIndex: 1,
-          flex: 1, // chiếm toàn bộ chiều cao trừ pagination
+          flex: 1,
         }}
       >
         <Typography
@@ -130,7 +136,6 @@ export default function ToolsPage() {
         </Grid>
       </Container>
 
-      {/* Pagination dưới cùng */}
       {totalPages > 1 && (
         <Stack
           alignItems="center"
